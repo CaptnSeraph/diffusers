@@ -51,37 +51,45 @@ def numpy_to_pil(images):
 from typing import List, Optional
 from PIL import Image, ImageDraw, ImageFont
 
+# Create a function to wrap text
 def wrap_text(text, draw, font, max_width):
+    # Create a list to hold the lines of text
     lines = []
+    # Split the text into individual words
     words = text.split()
+    # Loop until there are no more words to process
     while words:
+        # Create a variable to hold the text line
         line = ''
+        # Try to get the width of the text line plus the next word
         try:
-            # Check if there are words left before trying to measure the text's width
-            if words:
-                text_width = font.getlength(line + words[0])
-            else:
-                break
+            # Attempt to use newer Pillow method
+            text_width = font.getlength(line + words[0])
         except AttributeError:
             # Use older method for older versions of Pillow
             text_width = draw.textlength(line + words[0], font=font)
-
+        # Check if the line is wider than the max width
         if text_width > max_width:
-            lines.append(words.pop(0))  # Single word is longer than max_width
+            # If the line is wider than the max width, add the word to the list
+            lines.append(words.pop(0))
         else:
+            # If the line is not wider than the max width, keep adding words until the line is too wide
             while words:
+                # Add the next word to the line
                 line += (words.pop(0) + ' ')
-                # Check if there are words left before trying to measure the text's width
-                if words:
-                    try:
-                        # Attempt to use newer Pillow method
-                        text_width = font.getlength(line + words[0])
-                    except AttributeError:
-                        # Use older method for older versions of Pillow
-                        text_width = draw.textlength(line + words[0], font=font)
-                else:
+                try:
+                    # Attempt to use newer Pillow method
+                    text_width = font.getlength(line + words[0])
+                except AttributeError:
+                    # Use older method for older versions of Pillow
+                    text_width = draw.textlength(line + words[0], font=font)
+                # Check if the line is wider than the max width
+                if text_width > max_width:
+                    # If the line is wider than the max width, stop adding words
                     break
+            # Add the line to the list
             lines.append(line)
+    # Return the list of lines
     return lines
 
 
@@ -155,19 +163,16 @@ def make_image_grid(images: List[Image.Image], x_labels: List[str], y_labels: Li
 
         # Draw X and Y labels
         if i < cols:
-            draw.text((x_offset + w//2 - 10*len(x_labels[i])//2, y_offset), x_labels[i], fill="black", font=label_font)
+            text_width = draw.textlength(x_labels[i], font=label_font)
+            draw.text((x_offset + w//2 - text_width//2, y_offset), x_labels[i], fill="black", font=label_font)
         
         if i % cols == 0:
             wrapped_text = wrap_text(y_labels[i // cols], draw, label_font, y_label_width)
-            total_text_height = len(wrapped_text) * label_font.getsize('A')[1]  # Approximate total height of text
-            start_y = y_offset + label_height + h//2 - total_text_height // 2  # Centering the starting position of wrapped text
             for line in wrapped_text:
                 text_width = draw.textlength(line, font=label_font)
                 text_x = (y_label_width - text_width) // 2
-                draw.text((text_x, start_y), line, fill="black", font=label_font)
-                start_y += label_font.getsize('A')[1]
-
+                draw.text((text_x, y_offset + label_height//2 - label_font.size//2), line, fill="black", font=label_font)
+                y_offset += label_font.size
 
     return grid
-
 
