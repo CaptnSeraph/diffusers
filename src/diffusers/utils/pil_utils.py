@@ -56,14 +56,35 @@ def wrap_text(text, draw, font, max_width):
     words = text.split()
     while words:
         line = ''
-        if draw.textsize(line + words[0], font=font)[0] > max_width:
-            # Handle case where single word is longer than max_width
-            lines.append(words.pop(0))
+        try:
+            # Check if there are words left before trying to measure the text's width
+            if words:
+                text_width = font.getlength(line + words[0])
+            else:
+                break
+        except AttributeError:
+            # Use older method for older versions of Pillow
+            text_width = draw.textlength(line + words[0], font=font)
+
+        if text_width > max_width:
+            lines.append(words.pop(0))  # Single word is longer than max_width
         else:
-            while words and draw.textsize(line + words[0], font=font)[0] <= max_width:
+            while words:
                 line += (words.pop(0) + ' ')
+                # Check if there are words left before trying to measure the text's width
+                if words:
+                    try:
+                        # Attempt to use newer Pillow method
+                        text_width = font.getlength(line + words[0])
+                    except AttributeError:
+                        # Use older method for older versions of Pillow
+                        text_width = draw.textlength(line + words[0], font=font)
+                else:
+                    break
             lines.append(line)
     return lines
+
+
 
 def make_image_grid(images: List[Image.Image], x_labels: List[str], y_labels: List[str], resize: Optional[int] = None) -> Image.Image:
     num_images = len(images)
