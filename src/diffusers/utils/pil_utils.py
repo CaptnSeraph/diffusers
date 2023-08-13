@@ -85,6 +85,49 @@ def wrap_text(text, draw, font, max_width):
     return lines
 
 
+def make_image_grid(images: List[Image.Image], x_labels: List[str], y_labels: List[str], resize: Optional[int] = None) -> Image.Image:
+    num_images = len(images)
+    cols = len(x_labels)
+    rows = len(y_labels)
+    assert num_images == rows * cols, "Mismatch between number of images and grid dimensions."
+    
+    if resize is not None:
+        images = [img.resize((resize, resize)) for img in images]
+
+    w, h = images[0].size
+    label_height = 100
+    y_label_width = 300  # Reserved space for y-labels
+    label_font = ImageFont.truetype("arial.ttf", 150)
+
+    grid = Image.new("RGB", size=(cols * w + y_label_width, rows * (h + label_height)), color="white")
+    draw = ImageDraw.Draw(grid)
+
+    for i, img in enumerate(images):
+        x_offset = i % cols * w + y_label_width  # Adjusted for y-label width
+        y_offset = (i // cols) * (h + label_height)
+        
+        # Place image on grid
+        grid.paste(img, box=(x_offset, y_offset + label_height))
+
+        # Draw X and Y labels
+        if i < cols:
+            draw.text((x_offset + w//2 - 10*len(x_labels[i])//2, y_offset), x_labels[i], fill="black", font=label_font)
+        
+        if i % cols == 0:
+            wrapped_text = wrap_text(y_labels[i // cols], draw, label_font, y_label_width)
+            _, text_height = draw.textsize('A', font=label_font)
+            total_text_height = len(wrapped_text) * text_height
+                    # Approximate total height of text
+            start_y = y_offset + label_height + h//2 - total_text_height // 2  # Centering the starting position of wrapped text
+            for line in wrapped_text:
+                text_width = draw.textlength(line, font=label_font)
+                text_x = (y_label_width - text_width) // 2
+                draw.text((text_x, start_y), line, fill="black", font=label_font)
+                start_y += label_font.getsize('A')[1]
+
+
+    return grid
+
 
 def make_image_grid(images: List[Image.Image], x_labels: List[str], y_labels: List[str], resize: Optional[int] = None) -> Image.Image:
     num_images = len(images)
