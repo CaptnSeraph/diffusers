@@ -53,11 +53,14 @@ def wrap_text(text, font, max_width):
     words = text.split()
     while words:
         line = ''
-        while words and font.getlength(line + words[0]) <= max_width:
-            line += (words.pop(0) + ' ')
-        lines.append(line)
+        if font.getsize(line + words[0])[0] > max_width:
+            # Handle case where single word is longer than max_width
+            lines.append(words.pop(0))
+        else:
+            while words and font.getsize(line + words[0])[0] <= max_width:
+                line += (words.pop(0) + ' ')
+            lines.append(line)
     return lines
-
 
 def make_image_grid(images: List[Image.Image], x_labels: List[str], y_labels: List[str], resize: Optional[int] = None) -> Image.Image:
     num_images = len(images)
