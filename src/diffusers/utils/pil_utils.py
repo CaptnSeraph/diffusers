@@ -48,16 +48,19 @@ def numpy_to_pil(images):
 
     return pil_images
 
-def wrap_text(text, font, max_width):
+from typing import List, Optional
+from PIL import Image, ImageDraw, ImageFont
+
+def wrap_text(text, draw, font, max_width):
     lines = []
     words = text.split()
     while words:
         line = ''
-        if font.getsize(line + words[0])[0] > max_width:
+        if draw.textsize(line + words[0], font=font)[0] > max_width:
             # Handle case where single word is longer than max_width
             lines.append(words.pop(0))
         else:
-            while words and font.getsize(line + words[0])[0] <= max_width:
+            while words and draw.textsize(line + words[0], font=font)[0] <= max_width:
                 line += (words.pop(0) + ' ')
             lines.append(line)
     return lines
@@ -91,7 +94,7 @@ def make_image_grid(images: List[Image.Image], x_labels: List[str], y_labels: Li
             draw.text((x_offset + w//2 - 10*len(x_labels[i])//2, y_offset), x_labels[i], fill="black", font=label_font)
         
         if i % cols == 0:
-            wrapped_text = wrap_text(y_labels[i // cols], label_font, y_label_width)
+            wrapped_text = wrap_text(y_labels[i // cols], draw, label_font, y_label_width)
             total_text_height = len(wrapped_text) * label_font.getsize('A')[1]  # Approximate total height of text
             start_y = y_offset + label_height + h//2 - total_text_height // 2  # Centering the starting position of wrapped text
             for line in wrapped_text:
@@ -102,4 +105,5 @@ def make_image_grid(images: List[Image.Image], x_labels: List[str], y_labels: Li
 
 
     return grid
+
 
